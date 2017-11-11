@@ -3,6 +3,8 @@ import { CLIENT_ID, OAUTH_TOKEN, REDIRECT_URI } from '../../constants/authentica
 import * as actionTypes from '../../constants/actionTypes';
 import { apiUrl } from '../../services/api';
 import { fetchFollowings, fetchActivities, fetchFollowers, fetchFavorites } from '../../actions/user';
+import { setRequestInProcess } from '../../actions/request';
+import * as requestTypes from '../../constants/requestTypes';
 
 function setSession(session) {
   return {
@@ -15,6 +17,13 @@ function setUser(user) {
   return {
     type: actionTypes.SET_USER,
     user
+  };
+}
+
+export function setLoginError(error) {
+  return {
+    type: actionTypes.SET_LOGIN_ERROR,
+    error
   };
 }
 
@@ -39,15 +48,17 @@ const fetchUser = () => (dispatch) => {
 export const login = () => (dispatch) => {
   const client_id = CLIENT_ID;
   const redirect_uri = REDIRECT_URI;
-  /* eslint-disable no-undef */
+  dispatch(setRequestInProcess(true, requestTypes.AUTH));
   SC.initialize({ client_id, redirect_uri });
-
   SC.connect().then((session) => {
     Cookies.set(OAUTH_TOKEN, session.oauth_token);
     dispatch(setSession(session));
     dispatch(fetchUser());
+    dispatch(setRequestInProcess(false, requestTypes.AUTH));
+  }).catch((err) => {
+    dispatch(setLoginError(err));
+    dispatch(setRequestInProcess(false, requestTypes.AUTH));
   });
-  /* eslint-enable no-undef */
 };
 
 export const logout = () => (dispatch) => {
